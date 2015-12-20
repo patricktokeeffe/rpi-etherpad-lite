@@ -1,53 +1,276 @@
-Setup Etherpad Lite server on Raspberry Pi
-==========================================
+Setup EtherpadLite Server (reprise)
+===================================
 
-Done using Raspberry Pi Model 1 B+ with Raspbian Wheezy (2015 May)
+### Prepare clean system
 
-1. Complete basic configuration: `sudo raspi-config`
-    * expand file system
-    * change locale to US/english
-    * change keyboard to US/english
-    * verify SSH is enabled
-2. Add Adafruit repository: `curl -sLS https://apt.adafruit.com/add | sudo bash`
-3. Install node (0.12.6): `sudo apt-get install node`
-4. Install systemd: `sudo apt-get install systemd`
-   and enable: add "init=/bin/systemd" to `/boot/cmdline.txt`
-5. Create service for Etherpad Lite
-    * make user: `sudo adduser --system --group --home=/srv/etherpad-lite etherpad-lite`
-    * ensure perms: `sudo chown -R etherpad-lite /srv/etherpad-lite
-    * create service file: `sudo nano /etc/systemd/system/etherpad-lite.service`
+* Start with clean image: `2015-11-21-raspbian-jessie-lite.img`
+* Do basic config: `sudo raspi-config`
+    * Expand file system: yes
+    * i18n
+        * locale: US.UTF_8
+        * keyboard: US english (defaults)
+        * timezone: GMT+8 (Pacific Standard)
+    * Advanced options
+        * set hostname `logbook`
+        * enable SSH
+* Reboot
+* Add Adafruit repos: `curl -sLS https://apt.adafruit.com/add | sudo bash`
+* Update system:
 
-        [Unit]
-        Description=etherpad-lite (real-time collaborative document editing)
-        After=syslog.target network.target
+````
+pi@logbook:~ $ sudo apt-get update
+pi@logbook:~ $ sudo apt-get upgrade -y
+pi@logbook:~ $ sudo reboot
+````
 
-        [Service]
-        Type=simple
-        User=etherpad-lite
-        Group=etherpad-lite
-        ExecStart=/srv/etherpad-lite/bin/run.sh
+#### Install Etherpad 
 
-        [Install]
-        WantedBy=multi-user.target
+* Install packages:
+    * node (0.12.6-1)
+    * git
+    * libssl-dev
+* Grab etherpad lite source, checkout latest release then create and
+  configure settings
 
-6. Install Etherpad Lite
-    * clone: `sudo git clone https://github.com/ether/etherpad-lite.git /srv/etherpad-lite`
-    * checkout release: `sudo git checkout -b 1.5.7
-7. Setup Etherpad Lite
-    * enter: `cd /srv/etherpad-lite`
-    * create settings file: `sudo cp settings.json.template settings.json`
-    * edit settings: `sudo nano setting.json`
-        * enable admin
-    * test-run as user: `sudo -u etherpad-lite bin/run.sh` ... success
-8. Reboot: `sudo reboot`
-9. Enable the service
-    * Fails: `sudo systemctl enable etherpad-lite`
-    * Succeeds: `sudo systemctl enable etherpad-lite.service`
-    * ...however, can't access Etherpad Lite
-    * try adding `local-fs.target` as requirement/after to service file.... nope
-    * change from simple to forking... not running after reboot, so manually start...
+````
+pi@logbook:~ $ sudo git clone https://github.com/ether/etherpad-lite.git /srv/etherpad-lite
+Cloning into '/srv/etherpad-lite'...
+remote: Counting objects: 27466, done.
+remote: Total 27466 (delta 0), reused 0 (delta 0), pack-reused 27466
+Receiving objects: 100% (27466/27466), 19.15 MiB | 284.00 KiB/s, done.
+Resolving deltas: 100% (19467/19467), done.
+Checking connectivity... done.
+pi@logbook:~ $ cd /srv/etherpad-lite
+pi@logbook:/srv/etherpad-lite $ sudo cp settings.json.template settings.json
+pi@logbook:/srv/etherpad-lite $ sudo nano settings.json
+````
+````
+enable admin by uncommenting user section
+````
+
+* Test run: 
+
+````
+pi@logbook:/srv/etherpad-lite $ sudo bin/run.sh
+
+````
+Works OK, but not when added to cron table
+
+
+#### Promote Etherpad to service
+
+<https://github.com/ether/etherpad-lite/wiki/How-to-deploy-Etherpad-Lite-as-a-service>
+
+create new user, grant that user access and create new service file
+
+````
+pi@logbook:~ $ sudo adduser --system --home=/srv/etherpad-lite --group etherpad-lite
+pi@logbook:~ $ sudo chown -R etherpad-lite:etherpad-lite /srv/etherpad-lite
+pi@logbook:~ $ sudo nano /etc/systemd/system/etherpad-lite.service
+````
+````
+[Unit]
+Description=etherpad-lite (real-time collaborative document editing)
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=etherpad-lite
+Group=etherpad-lite
+ExecStart=/bin/sh /srv/etherpad-lite/bin/run.sh
+
+[Install]
+WantedBy=multi-user.target
+````
+
+Save.
+
+````
+pi@logbook:~ $ sudo systemctl enable etherpad-lite
+Created symlink from /etc/systemd/system/multi-user.target.wants/etherpad-lite.service to /etc/systemd/system/etherpad-lite.service
+pi@logbook:~ $ sudo systemctl start etherpad-lite
+````
+
+Works! Now, edit the newly created configuration file:
+
+````
+pi@logbook:~ $ sudo nano /srv/etherpad-lite/settings.json
+````
+
+Tasks you might consider:
+
+* Change the bound port (9001) to something else (say, 80)
+* Enable users (for admin capabilities)
+* ????
+
+#### Enable Etherpad on port 80
+
+* http://stackoverflow.com/a/27805105
+* https://www.digitalocean.com/community/tutorials/how-to-use-pm2-to-setup-a-node-js-production-environment-on-an-ubuntu-vps
+
+````
+pi@logbook:~ $ which node
+/usr/local/bin/node
+pi@logbook:~ $ sudo setcap cap_net_bind_service=+ep /usr/local/bin/node
+````
+
+After restarting etherpad, it can be on port 80
+
+
+#### Install "real" database
+
+Install database
+
+````
+pi@logbook:~ $ sudo apt-get install mysql-server -y
+````
+
+It will prompt (twice) for a mysql root user password: `defense_contractors`
+Then it takes a while to finish installing.
+
+Launch a mysql session:
+
+````
+pi@logbook:~ $ mysql -u root -p
+Enter password: 
+````
+
+It provides a new prompt. Create a database and grant a new user rights to it.
+In this example, the credentials are `USERNAME`/`PASSPHRASE`.
+
+> I've actually used `ep`/`thundercats`
+
+````
+mysql> create database `etherpad-lite`;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> grant CREATE,ALTER,SELECT,INSERT,UPDATE,DELETE on `etherpad-lite`.* to 'USERNAME'@'localhost' identified by 'PASSPHRASE';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> exit
+Bye
+````
+
+Update etherpad to use mysql:
+
+````
+pi@logbook:~ $ sudo nano /srv/etherpad-lite/settings.json
+````
+````
+  ...
+  //You shouldn't use "dirty" for for anything else than testing or development
+- "dbType" : "dirty",
++ //"dbType" : "dirty",
+  //the database specific settings
+- "dbSettings" : {
+-                "filename" : "var/dirty.db"
+-              },
++ //"dbSettings" : {
++ //               "filename" : "var/dirty.db"
++ //             },
+
+- /* An Example of MySQL Configuration
+-  "dbType" : "mysql",
+-  "dbSettings" : {
+-                   "user"    : "root",
+-                   "host"    : "localhost",
+-                   "password": "",
+-                   "database": "store"
+-                 },
+- */
++ /* An Example of MySQL Configuration */
++  "dbType" : "mysql",
++  "dbSettings" : {
++                   "user"    : "ep",
++                   "host"    : "localhost",
++                   "password": "thundercats",
++                   "database": "etherpad-lite"
++                 },
++ /**/
+  ...
+````
+
+and restart etherpad. wait for it to load completely (up to 2 minutes); use `top`
+to watch progress (CPU usage drops to near 0%)
+
+````
+pi@logbook:~ $ sudo service etherpad-lite restart
+````
+
+go back into mysql
+
+````
+pi@logbook:~ $ mysql -u root -p
+Enter password: 
+````
+````
+mysql> ALTER DATABASE `etherpad-lite` CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> USE `etherpad-lite`;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> ALTER TABLE `store` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+Query OK, 1 row affected (0.04 sec)
+Records: 1 Duplicates: 0 Warnings: 0
+
+mysql> ALTER TABLE `store` ENGINE = MyISAM;
+Query OK, 1 row affected (0.04 sec)
+Records: 1 Duplicates: 0 Warnings: 0
+
+mysql> quit
+Bye
+````
+
+It's not 100% the choice to revert from the InnoDB to MyISAM engine is 
+really appropriate. The etherpad-lite wiki claims it's a 10x performance
+increase but not much 3rd-party information supports that claim. It's
+possible, but probably not 10x
+
+http://dba.stackexchange.com/questions/17431/which-is-faster-innodb-or-myisam
+
+restart etherpad service
+
+````
+pi@logbook:~ $ sudo service etherpad-lite restart
+````
+
+viola!
+
+
+
+#### Custom favicon
+
+Retrieve the WSU favicon:
+
+````
+pi@logbook:~ $ cd /srv
+pi@logbook:/srv $ sudo wget http://images.wsu.edu/favicon.ico
+pi@logbook:/srv $ sudo chown etherpad-lite:etherpad-lite favicon.ico
+````
+
+#### TODO
+
+* serve over HTTPS? letsencrypt.org
+* monitoring software? monit?
+* install useful plugins
+    * pad manager
+    * ?
+* apply WSU color scheme
+
+
+#### Add system monitoring page
+
+<http://rpi-experiences.blogspot.fr/>
+
+````
+pi@logbook:~ $ sudo apt-get install apt-transport-https
+pi@logbook:~ $ sudo bash -c 'echo "deb https://github.com XavierBerger/RPi-Monitor-deb/raw/master/repo" >> /etc/apt/sources.list.d/rpimonitor.list'
+pi@logbook:~ $ 
 
 
 
 
-
+````
