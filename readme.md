@@ -254,7 +254,6 @@ pi@logbook:/srv $ sudo chown etherpad-lite:etherpad-lite favicon.ico
 #### TODO
 
 * serve over HTTPS? letsencrypt.org
-* monitoring software? monit?
 * install useful plugins
     * pad manager
     * ?
@@ -264,13 +263,40 @@ pi@logbook:/srv $ sudo chown etherpad-lite:etherpad-lite favicon.ico
 #### Add system monitoring page
 
 <http://rpi-experiences.blogspot.fr/>
+<https://github.com/XavierBerger/RPi-Monitor-deb>
+
+not necessary to update any packages, it already has latest `dpkg-dev`, 
+`apt-transport-https`, and `ca-certificates`. 
+
+First add the new repo source url then add developer's key (2C0D3C0F).
+Next update packages list to realize RPi-Monitor exists. Get stuck on error.
 
 ````
-pi@logbook:~ $ sudo apt-get install apt-transport-https
-pi@logbook:~ $ sudo bash -c 'echo "deb https://github.com XavierBerger/RPi-Monitor-deb/raw/master/repo" >> /etc/apt/sources.list.d/rpimonitor.list'
-pi@logbook:~ $ 
+pi@logbook:~ $ sudo bash -c 'echo "deb https://github.com XavierBerger/RPi-Monitor-deb/raw/master/repo/" >> /etc/apt/sources.list.d/rpimonitor.list' 
+pi@logbook:~ $ sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 2C0D3C0F
+...
+pi@logbook:~ $ sudo apt-get update
+... produces error
+````
 
-
-
+Try direct file download and install:
 
 ````
+pi@logbook:~ $ wget https://github.com/XavierBerger/RPi-Monitor-deb/raw/master/repo/rpimonitor_2.10-1_all.deb
+pi@logbook:~ $ sudo dpkg -k rpimonitor_2.10-1.deb
+````
+
+It installs, with dependencies missing. 
+
+````
+pi@logbook:~ $ sudo apt-get install -f -y
+...lots of output
+````
+
+Now run post-install configuration script:
+
+````
+pi@logbook:~ $ sudo apt-get update && sudo /usr/share/rpimonitor/scripts/updatePackagesStatus.pl
+````
+
+
