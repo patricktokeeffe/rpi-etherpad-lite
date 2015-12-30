@@ -1,7 +1,75 @@
-Setup EtherpadLite Server (reprise)
-===================================
+Electronic Logbook
+==================
 
-### Bill of Materials
+Powered by Etherpad Lite
+------------------------
+
+This repository is for a dedicated electronic logbook on a Raspberry Pi using
+Etherpad-Lite. Local system monitoring is achieved using RPi-Monitor. An off
+button is provided to safely shut down while operating headless.
+
+### Usage <a name="h3-usage"></a>
+
+#### Normal Use
+
+**TODO**
+
+* system boots within ~30 sec, the logbook server takes ~2 min to get online
+* hold power button several seconds to turn off and wait for green LED to
+  quiet before removing power
+* has hostname `logbook` but requests IP via DHCP
+* logbook server operates on normal port, 80 (i.e http://logbook.local)
+    * no login to use the logbooks
+    * can edit only, not create (see admin)
+* things to highlight in etherpad:
+    * author names
+    * headings
+    * history
+    * chat
+* security warnings:
+    * no authentication, use alternate secure mechanism (ours is wifi wpa2)
+    * no apparent way for admin to archive (lock) a pad
+
+related:
+
+* rpi-monitor for users to view system load, etc
+* samba share for users to get how-to instructions, archived pads
+
+
+
+### Administration <a name="h3-admin"></a>
+
+**TODO**
+
+* administer etherpad-lite at `/admin` webpage
+    * enable/disable pad creation
+    * ???
+* view system status using rpi-monitor
+* administer the samba shares via `/etc/samba.conf` ????
+* system administration tasks
+    * time settings: timezone, ntp source
+    * package updates: manually? how frequently?
+    * network settings: looking up
+
+
+
+* template sheet "Useful facts about this computer"
+    * description
+    * setup by facts (date, name, email)
+    * associated repositories
+    * network info
+        * hostname
+        * LAN mac address
+        * samba shares
+    * credentials
+        * raspbian root user
+        * etherpad administrator
+        * mysql administrator
+        * mysql etherpad user
+        * samba share users, if any
+
+
+### Bill of Materials <a name="h3-bom"></a>
 
 | Description                                             | ~USD$ |
 |---------------------------------------------------------|-------|
@@ -19,7 +87,12 @@ Setup EtherpadLite Server (reprise)
   [bom3]: http://www.amazon.com/gp/product/B00ONOKPHC
 
 
-### Prepare clean system
+### Initial Setup <a name="h3-setup"></a>
+
+#### Getting Started
+
+If you didn't purchase a microSD card with a clean Raspbian Jessie (Nov 2015)
+install, you'll need to prepare one according to your [favorite method]
 
 * Start with clean image: `2015-11-21-raspbian-jessie-lite.img`
 * Do basic config: `sudo raspi-config`
