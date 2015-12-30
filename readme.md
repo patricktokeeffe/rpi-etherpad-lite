@@ -1,6 +1,24 @@
 Setup EtherpadLite Server (reprise)
 ===================================
 
+### Bill of Materials
+
+| Description                                             | ~USD$ |
+|---------------------------------------------------------|-------|
+| [Raspberry Pi Model B+][bom0]                           |   30  |
+| [4GB uSD card (w/ Jessie Lite)][bom1]                   |   10  |
+| Momentary switch, [such as][bom2]                       |    1  |
+| Case for RPi (we prefer [this one*][bom3])              |    7  |
+| *Total*                                                 |   48  |
+
+*\* It's inexpensive, easy to modify for a button and lacks unnecessary slots.*
+
+  [bom0]: https://www.adafruit.com/products/1914
+  [bom1]: https://www.adafruit.com/products/2820
+  [bom2]: http://www.amazon.com/gp/product/B00HG7GWRK
+  [bom3]: http://www.amazon.com/gp/product/B00ONOKPHC
+
+
 ### Prepare clean system
 
 * Start with clean image: `2015-11-21-raspbian-jessie-lite.img`
